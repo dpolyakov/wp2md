@@ -34,7 +34,7 @@ function convert(source: string, output: string) {
     const status = entry['wp:status'];
     const type = entry['wp:post_type'];
     const checkStatus = status !== 'private' && status !== 'inherit';
-    const checkType = type === 'post';
+    const checkType = (type !== 'nav_menu_item');
 
     return checkStatus && checkType;
   });
@@ -42,12 +42,22 @@ function convert(source: string, output: string) {
   const total = content.length;
   const bar = new ProgressBar(':bar', { total });
 
-  content.forEach((entry: IWpEntry) => {
-    const { fileName, content } = converter(entry);
-    const filePath = path.join(output, `${fileName}.md`);
+  checkOrCreateOutputFolder(output);
 
-    checkOrCreateOutputFolder(output);
+  content.forEach((entry: IWpEntry) => {
+    const { fileName, content, contentType } = converter(entry);
+    let contentPath = path.join(output, contentType);
+
+    if (contentType === 'page') {
+      contentPath = path.join(output);
+    }
+
+    checkOrCreateOutputFolder(contentPath); 
+    
+    const filePath = path.join(contentPath, `${fileName}.md`);
+
     fs.writeFile(filePath, content, {}, catchErrors);
+    
     bar.tick();
   });
 }

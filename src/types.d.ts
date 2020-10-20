@@ -16,7 +16,7 @@ export interface IWpEntry {
   'wp:status': PostStatus;
   'wp:post_parent': number;
   'wp:menu_order': number;
-  'wp:post_type': 'post' | 'page';
+  'wp:post_type': WpPostType;
   'wp:post_password': string;
   'wp:is_sticky': number;
   category?: Array<IWpTaxonomy>;
@@ -40,3 +40,5 @@ type WpMeta = {
 type WpStatus = 'open' | 'close';
 
 type PostStatus = 'private' | 'inherit' | 'publish' | 'draft';
+
+type WpPostType = 'post' | 'page' | 'nav_menu_item' | string;
