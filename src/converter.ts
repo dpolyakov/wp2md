@@ -1,69 +1,43 @@
-import json2md from 'json2md';
+import yaml from 'js-yaml';
 import TurndownService from 'turndown';
 
-import { getYouTubeId, getVimeoId } from './utils';
+import { getStaticComments } from './commentConverter';
+import { cleanContent } from './utils';
 
-import { IWpEntry } from './types';
+import { IWpEntry, IStaticAuthorsData, WpPostType } from './types';
 
 const turndownService = new TurndownService();
 
-turndownService.addRule('iframe', {
-  filter: 'iframe',
-  // @ts-ignore
-  replacement: (content, node: HTMLIFrameElement) => {
-    const youtubeId = getYouTubeId(node.src);
+turndownService.keep(['iframe', 'pre', 'code']);
 
-    if (youtubeId) {
-      return `{{< youtube id="${youtubeId}" >}}`;
-    } else {
-      const vimeoId = getVimeoId(node.src);
-      if (vimeoId) {
-        return `{{< vimeo ${vimeoId} >}}`;
-      }
-    }
-
-    return node.outerHTML;
-  },
-});
-
-json2md.converters.separator = () => '---';
-json2md.converters.meta = ({
-  key,
-  value,
-}: {
-  key: string;
-  value?: string | null;
-}) => {
-  if (!value) {
-    return `${key}:`;
-  }
-  return `${key}: "${value}"`;
+type Taxonomies = { categories: string[]; tags: string[] };
+type EntryMeta = {
+  title: string;
+  date: string;
+  author: string;
+  id: string;
+  type: WpPostType;
+  slug?: string;
+  categories?: Array<string>;
+  tags?: Array<string>;
+  draft?: boolean;
 };
 
-type EntrySeparator = { separator: boolean };
-type EntryMetaField = { meta: { key: string; value?: string } };
-type EntryMetaValueList = { ul: string[] };
-type EntryMeta = Array<EntrySeparator | EntryMetaField | EntryMetaValueList>;
-type Taxonomies = { categories: string[]; tags: string[] };
+export const converter = (entry: IWpEntry, authors: IStaticAuthorsData) => {
+  const entryMeta: EntryMeta = {
+    title: entry.title,
+    date: entry['wp:post_date'],
+    author: entry['dc:creator'],
+    id: String(entry['wp:post_id']),
+    type: entry['wp:post_type'],
+  };
 
-export const converter = (entry: IWpEntry) => {
-  const entryMeta: EntryMeta = [
-    { separator: true },
-    { meta: { key: 'title', value: entry.title } },
-    { meta: { key: 'date', value: entry['wp:post_date'] } },
-    { meta: { key: 'author', value: entry['dc:creator'] } },
-    { meta: { key: 'id', value: String(entry['wp:post_id']) } },
-    { meta: { key: 'type', value: entry['wp:post_type'] } },
-    {
-      meta: {
-        key: 'draft',
-        value: entry['wp:status'] === 'publish' ? 'false' : 'true',
-      },
-    },
-  ];
+  if (entry['wp:status'] !== 'publish') {
+    entryMeta.draft = true;
+  }
 
   if (entry['wp:post_name'] !== '') {
-    entryMeta.push({ meta: { key: 'slug', value: entry['wp:post_name'] } });
+    entryMeta.slug = entry['wp:post_name'];
   }
 
   if (entry.category && entry.category.length > 0) {
@@ -72,11 +46,10 @@ export const converter = (entry: IWpEntry) => {
         switch (taxonomy.attr.domain) {
           case 'post_tag':
             acc.tags.push(taxonomy.value);
-
             break;
+
           case 'category':
             acc.categories.push(taxonomy.value);
-
             break;
 
           default:
@@ -89,30 +62,37 @@ export const converter = (entry: IWpEntry) => {
     );
 
     if (taxonomies.categories.length) {
-      entryMeta.push(
-        { meta: { key: 'categories' } },
-        { ul: taxonomies.categories }
-      );
+      entryMeta.categories = taxonomies.categories;
     }
 
     if (taxonomies.tags.length) {
-      entryMeta.push({ meta: { key: 'tags' } }, { ul: taxonomies.tags });
+      entryMeta.tags = taxonomies.tags;
     }
   }
 
-  entryMeta.push({ separator: true });
+  let content = '---\n';
+  content += yaml.safeDump(entryMeta);
+  content += '---\n\n';
 
-  let content = json2md(entryMeta);
+  content += turndownService.turndown(cleanContent(entry['content:encoded']));
 
-  content += turndownService.turndown(
-    entry['content:encoded'].replace(/\n/g, '<br/>')
-  );
   const fileName =
     entry['wp:post_name'] !== '' ? entry['wp:post_name'] : entry['wp:post_id'];
 
+  const comments =
+    entry['wp:comment'] && entry['wp:comment'].length
+      ? getStaticComments({
+          comments: entry['wp:comment'],
+          authors,
+          publicOnly: true,
+        })
+      : null;
+
   return {
-    fileName,
-    content,
     contentType: entry['wp:post_type'],
+    contentId: entry['wp:post_id'],
+    content,
+    comments,
+    fileName,
   };
 };
