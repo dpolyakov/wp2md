@@ -46,7 +46,6 @@
   "dependencies": {
     "fast-xml-parser": "^3.17.4",
     "js-yaml": "^3.14.0",
-    "json2toml": "^2.0.2",
     "progress": "^2.0.3",
     "turndown": "^7.0.0"
   }
