@@ -45,7 +45,7 @@
   },
   "dependencies": {
     "fast-xml-parser": "^3.17.4",
-    "js-yaml": "^3.14.0",
+    "js-yaml": "^3.14.1",
     "progress": "^2.0.3",
     "turndown": "^7.0.0"
   }
