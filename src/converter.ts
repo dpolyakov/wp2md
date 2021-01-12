@@ -71,7 +71,7 @@ export const converter = (entry: IWpEntry, authors: IStaticAuthorsData) => {
   }
 
   let content = '---\n';
-  content += yaml.safeDump(entryMeta);
+  content += yaml.dump(entryMeta);
   content += '---\n\n';
 
   content += turndownService.turndown(cleanContent(entry['content:encoded']));
