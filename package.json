@@ -47,6 +47,6 @@
     "fast-xml-parser": "^3.17.6",
     "js-yaml": "^4.0.0",
     "progress": "^2.0.3",
-    "turndown": "^7.0.0"
+    "turndown": "^7.1.2"
   }
 }
