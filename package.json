@@ -36,7 +36,7 @@
   "devDependencies": {
     "@types/js-yaml": "^4.0.0",
     "@types/node": "^18.7.23",
-    "@types/progress": "^2.0.3",
+    "@types/progress": "^2.0.5",
     "@types/turndown": "^5.0.0",
     "husky": "^4.3.7",
     "tsdx": "^0.14.1",
